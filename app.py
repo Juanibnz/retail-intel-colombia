@@ -223,7 +223,7 @@ def inicializar_si_necesario():
 
 inicializar_si_necesario()
 
-vectorstore, llm = cargar_recursos()
+vectorstore, llm = cargar_recursos(groq_key)
 cadena = construir_cadena(vectorstore, llm)
 
 tab_reporte, tab_consulta = st.tabs(["📊 Reporte semanal", "💬 Consulta libre"])
