@@ -174,6 +174,27 @@ st.caption(f"Inteligencia de mercado automatizada · Falabella · Studio F · Za
 
 st.divider()
 
+def inicializar_si_necesario():
+    """Construye la base de conocimiento si no existe."""
+    if not CHROMA_DIR.exists() or not any(CHROMA_DIR.iterdir()):
+        st.info("Inicializando base de conocimiento por primera vez. Esto toma unos minutos...")
+        
+        from main import main as extraer
+        from pipeline_rag import cargar_articulos, crear_chunks, construir_base_conocimiento
+        
+        with st.spinner("Extrayendo artículos de fuentes públicas..."):
+            extraer()
+        
+        with st.spinner("Construyendo base de conocimiento vectorial..."):
+            documentos = cargar_articulos()
+            chunks = crear_chunks(documentos)
+            construir_base_conocimiento(chunks)
+        
+        st.success("Base de conocimiento lista.")
+        st.rerun()
+
+inicializar_si_necesario()
+
 vectorstore, llm = cargar_recursos()
 cadena = construir_cadena(vectorstore, llm)
 
