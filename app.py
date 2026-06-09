@@ -11,6 +11,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.embeddings import Embeddings
 from sentence_transformers import SentenceTransformer
 import os
+import time
 
 class EmbeddingsLocales(Embeddings):
     def __init__(self, model_name: str):
@@ -128,7 +129,7 @@ Marca: {doc.metadata['marca']}
     return "\n\n".join(fragmentos)
 
 @st.cache_resource
-def cargar_recursos():
+def cargar_recursos(groq_key: str):
     embeddings = EmbeddingsLocales("all-MiniLM-L6-v2")
     vectorstore = Chroma(
         persist_directory=str(CHROMA_DIR),
@@ -137,7 +138,7 @@ def cargar_recursos():
     llm = ChatGroq(
         model=GROQ_MODEL,
         temperature=0,
-        api_key=st.secrets["GROQ_API_KEY"]
+        api_key=groq_key
     )
     return vectorstore, llm
 
@@ -174,6 +175,33 @@ st.caption(f"Inteligencia de mercado automatizada · Falabella · Studio F · Za
 
 st.divider()
 
+with st.sidebar:
+    st.header("Configuración")
+    groq_key = st.text_input(
+        "API key de Groq",
+        type="password",
+        help="Obtén una key gratuita en console.groq.com"
+    )
+    st.caption("Tu key no se almacena ni se comparte.")
+    
+    st.divider()
+    st.markdown("**¿Qué es esto?**")
+    st.caption(
+        "Sistema de inteligencia de mercado que monitorea "
+        "Falabella, Studio F y Zara Colombia usando fuentes "
+        "públicas de noticias procesadas con LLMs."
+    )
+    st.markdown("**Limitaciones actuales**")
+    st.caption(
+        "Fuentes: Google News RSS · "
+        "Cobertura: últimos 2 años · "
+        "Actualización: manual"
+    )
+
+if not groq_key:
+    st.info("Ingresa tu API key de Groq en el panel izquierdo para continuar.")
+    st.stop()
+
 def inicializar_si_necesario():
     """Construye la base de conocimiento si no existe."""
     if not CHROMA_DIR.exists() or not any(CHROMA_DIR.iterdir()):
@@ -202,14 +230,28 @@ tab_reporte, tab_consulta = st.tabs(["📊 Reporte semanal", "💬 Consulta libr
 
 with tab_reporte:
     st.subheader("Reporte de inteligencia semanal")
+    
+    with st.expander("📋 Resumen ejecutivo", expanded=True):
+        if st.button("Generar resumen ejecutivo", type="secondary"):
+            with st.spinner("Sintetizando..."):
+                resumen = cadena.invoke(
+                    "En máximo 5 puntos concisos, ¿cuáles son los movimientos "
+                    "más importantes del retail de moda en Colombia ahora mismo? "
+                    "Una oración por punto, ordenados por relevancia estratégica."
+                )
+                st.markdown(resumen)
+    
+    st.divider()
     st.caption("Análisis automatizado sobre las 6 dimensiones clave del mercado")
-
+    
     if st.button("Generar reporte completo", type="primary"):
-        for seccion in PREGUNTAS_REPORTE:
+        for i, seccion in enumerate(PREGUNTAS_REPORTE):
             with st.expander(f"**{seccion['titulo']}**", expanded=True):
                 with st.spinner("Analizando fuentes..."):
                     respuesta = cadena.invoke(seccion["pregunta"])
                     st.markdown(respuesta)
+                    if i < len(PREGUNTAS_REPORTE) - 1:
+                        time.sleep(8)
 
 with tab_consulta:
     st.subheader("Consulta libre")
