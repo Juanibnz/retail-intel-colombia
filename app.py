@@ -25,7 +25,7 @@ class EmbeddingsLocales(Embeddings):
 # Configuración
 CHROMA_DIR = Path("data/chroma_db")
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-GROQ_MODEL = "openai/gpt-oss-120b"
+GROQ_MODEL = "qwen/qwen3-32b"
 
 PREGUNTAS_REPORTE = [
     {
