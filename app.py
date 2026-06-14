@@ -251,27 +251,56 @@ Estás trabajando para el equipo estratégico de {marca_usuario} en Colombia.
 Analiza el contexto competitivo y produce un briefing ejecutivo
 para el director de estrategia. Debe ser escaneable en 90 segundos.
 
+REGLA CRÍTICA: Cada afirmación debe incluir la fuente y fecha entre paréntesis.
+Formato: (Fuente · Fecha)
+Si no tienes fuente para una afirmación, no la incluyas.
+
 Estructura exacta, sin agregar ni quitar secciones:
 
 🔴 SEÑAL DE LA SEMANA
-[Una oración. El movimiento más importante del mercado esta semana
-que {marca_usuario} no puede ignorar.]
+[Una oración con fuente. El movimiento más importante del mercado
+que {marca_usuario} no puede ignorar. (Fuente · Fecha)]
 
 📍 QUIÉN SE MUEVE Y HACIA DÓNDE
-[Máximo 3 líneas. Un punto por competidor relevante.
-Solo lo que cambia, no lo que se mantiene igual.]
+[Máximo 3 líneas. Un punto por competidor relevante con fuente.
+Solo lo que cambia, no lo que se mantiene igual.
+- Competidor: movimiento (Fuente · Fecha)]
 
 ⚠️ EL RIESGO QUE NADIE ESTÁ NOMBRANDO
-[Una oración. La amenaza emergente o el patrón que se está
-formando y que todavía no es obvio.]
+[Una oración con fuente. La amenaza emergente o patrón que se
+está formando. (Fuente · Fecha)]
 
 ❓ LA PREGUNTA QUE {marca_usuario.upper()} DEBERÍA HACERSE AHORA
-[Una sola pregunta estratégica. Que incomode. Que obligue a pensar.]
+[Una sola pregunta estratégica. Sin fuente necesaria.]
 
 Nada más. Sin introducciones, sin conclusiones, sin bullets adicionales.
 """
+                retriever = vectorstore.as_retriever(
+                    search_type="similarity",
+                    search_kwargs={"k": 9}
+                )
+                docs_usados = retriever.invoke(
+                    f"movimientos estratégicos retail moda Colombia {marca_usuario}"
+                )
+
                 briefing = cadena.invoke(prompt_briefing)
                 st.markdown(briefing)
+
+                st.divider()
+                st.caption("**Fuentes consultadas para este briefing:**")
+
+                fuentes_vistas = set()
+                for doc in docs_usados:
+                    fuente_key = f"{doc.metadata['fuente']}|{doc.metadata['fecha']}"
+                    if fuente_key not in fuentes_vistas:
+                        fuentes_vistas.add(fuente_key)
+                        col1, col2, col3 = st.columns([3, 2, 2])
+                        with col1:
+                            st.caption(doc.metadata['titulo'][:60] + "...")
+                        with col2:
+                            st.caption(doc.metadata['fuente'])
+                        with col3:
+                            st.caption(doc.metadata['fecha'][:16])
     
     st.divider()
     st.caption("Análisis automatizado sobre las 6 dimensiones clave del mercado")
