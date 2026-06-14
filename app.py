@@ -286,20 +286,47 @@ Nada más. Sin introducciones ni conclusiones adicionales.
 """
                 retriever = vectorstore.as_retriever(
                     search_type="similarity",
-                    search_kwargs={"k": 9}
-                )
-                docs_usados = retriever.invoke(
-                    f"movimientos estratégicos retail moda Colombia {marca_usuario}"
+                    search_kwargs={"k": 6}
                 )
 
-                briefing = cadena.invoke(prompt_briefing)
+                competidores = [m for m in ["Falabella", "Studio F", "Zara Colombia"]
+                               if m != marca_usuario]
+
+                docs_marca = retriever.invoke(
+                    f"estrategia expansión digital producto {marca_usuario} Colombia"
+                )
+                docs_comp1 = retriever.invoke(
+                    f"estrategia expansión digital producto {competidores[0]} Colombia"
+                )
+                docs_comp2 = retriever.invoke(
+                    f"estrategia expansión digital producto {competidores[1]} Colombia"
+                )
+
+                todos_los_docs = []
+                urls_vistas = set()
+                for doc in docs_marca + docs_comp1 + docs_comp2:
+                    url = doc.metadata.get("url", "")
+                    if url not in urls_vistas:
+                        urls_vistas.add(url)
+                        todos_los_docs.append(doc)
+
+                contexto_completo = formatear_contexto(todos_los_docs)
+
+                prompt_final = ChatPromptTemplate.from_messages([
+                    ("system", PROMPT_SISTEMA.replace("{contexto}", contexto_completo)
+                                             .replace("{fecha_hoy}",
+                                                      datetime.now().strftime("%d de %B de %Y"))),
+                    ("human", prompt_briefing)
+                ])
+
+                chain_briefing = prompt_final | llm | StrOutputParser()
+                briefing = chain_briefing.invoke({})
                 st.markdown(briefing)
 
                 st.divider()
-                st.caption("**Fuentes consultadas para este briefing:**")
-
+                st.caption("**Fuentes consultadas:**")
                 fuentes_vistas = set()
-                for doc in docs_usados:
+                for doc in todos_los_docs:
                     fuente_key = f"{doc.metadata['fuente']}|{doc.metadata['fecha']}"
                     if fuente_key not in fuentes_vistas:
                         fuentes_vistas.add(fuente_key)
