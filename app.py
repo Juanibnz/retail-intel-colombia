@@ -248,32 +248,41 @@ with tab_reporte:
                 prompt_briefing = f"""
 Estás trabajando para el equipo estratégico de {marca_usuario} en Colombia.
 
-Analiza el contexto competitivo y produce un briefing ejecutivo
-para el director de estrategia. Debe ser escaneable en 90 segundos.
+Tu trabajo es producir un briefing comparativo que le diga al director
+de estrategia exactamente dónde está {marca_usuario} en relación a sus
+competidores en este momento.
 
-REGLA CRÍTICA: Cada afirmación debe incluir la fuente y fecha entre paréntesis.
+REGLA CRÍTICA: Cada afirmación debe incluir fuente y fecha entre paréntesis.
 Formato: (Fuente · Fecha)
 Si no tienes fuente para una afirmación, no la incluyas.
 
-Estructura exacta, sin agregar ni quitar secciones:
+Estructura exacta:
 
-🔴 SEÑAL DE LA SEMANA
-[Una oración con fuente. El movimiento más importante del mercado
-que {marca_usuario} no puede ignorar. (Fuente · Fecha)]
+⚡ POSICIÓN COMPETITIVA DE {marca_usuario.upper()} ESTA SEMANA
+[Una oración que describe dónde está {marca_usuario} en el tablero
+competitivo ahora mismo. ¿Está adelante, atrás, o en movimiento?]
 
-📍 QUIÉN SE MUEVE Y HACIA DÓNDE
-[Máximo 3 líneas. Un punto por competidor relevante con fuente.
-Solo lo que cambia, no lo que se mantiene igual.
-- Competidor: movimiento (Fuente · Fecha)]
+📊 TABLERO COMPARATIVO
+[Tabla de 3 filas y 3 columnas]
+| Dimensión | {marca_usuario} | Competidores |
+|-----------|-----------------|--------------|
+| Expansión | [estado actual con fuente] | [quién se mueve y cómo] |
+| Digital   | [estado actual con fuente] | [quién se mueve y cómo] |
+| Producto  | [estado actual con fuente] | [quién se mueve y cómo] |
 
-⚠️ EL RIESGO QUE NADIE ESTÁ NOMBRANDO
-[Una oración con fuente. La amenaza emergente o patrón que se
-está formando. (Fuente · Fecha)]
+🔴 DONDE {marca_usuario.upper()} ESTÁ PERDIENDO TERRENO
+[Una oración concreta. La dimensión donde un competidor específico
+está avanzando más rápido. (Fuente · Fecha)]
 
-❓ LA PREGUNTA QUE {marca_usuario.upper()} DEBERÍA HACERSE AHORA
-[Una sola pregunta estratégica. Sin fuente necesaria.]
+🟢 DONDE {marca_usuario.upper()} TIENE VENTAJA
+[Una oración concreta. La dimensión donde {marca_usuario} lleva
+la delantera ahora mismo. (Fuente · Fecha)]
 
-Nada más. Sin introducciones, sin conclusiones, sin bullets adicionales.
+❓ LA DECISIÓN QUE NO PUEDE ESPERAR
+[Una sola pregunta estratégica que surge directamente de la
+comparación. Que incomode. Que obligue a actuar.]
+
+Nada más. Sin introducciones ni conclusiones adicionales.
 """
                 retriever = vectorstore.as_retriever(
                     search_type="similarity",
