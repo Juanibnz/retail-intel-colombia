@@ -183,7 +183,15 @@ with st.sidebar:
         help="Obtén una key gratuita en console.groq.com"
     )
     st.caption("Tu key no se almacena ni se comparte.")
-    
+
+    st.divider()
+    st.markdown("**¿Para qué marca trabajas?**")
+    marca_usuario = st.selectbox(
+        "Tu marca",
+        options=["", "Falabella", "Studio F", "Zara Colombia"],
+        help="El briefing se adaptará a tu perspectiva"
+    )
+
     st.divider()
     st.markdown("**¿Qué es esto?**")
     st.caption(
@@ -198,8 +206,11 @@ with st.sidebar:
         "Actualización: manual"
     )
 
-if not groq_key:
-    st.info("Ingresa tu API key de Groq en el panel izquierdo para continuar.")
+if not groq_key or not marca_usuario:
+    if not groq_key:
+        st.info("Ingresa tu API key de Groq en el panel izquierdo para continuar.")
+    if not marca_usuario:
+        st.info("Selecciona tu marca en el panel izquierdo para continuar.")
     st.stop()
 
 def inicializar_si_necesario():
@@ -231,15 +242,36 @@ tab_reporte, tab_consulta = st.tabs(["📊 Reporte semanal", "💬 Consulta libr
 with tab_reporte:
     st.subheader("Reporte de inteligencia semanal")
     
-    with st.expander("📋 Resumen ejecutivo", expanded=True):
-        if st.button("Generar resumen ejecutivo", type="secondary"):
-            with st.spinner("Sintetizando..."):
-                resumen = cadena.invoke(
-                    "En máximo 5 puntos concisos, ¿cuáles son los movimientos "
-                    "más importantes del retail de moda en Colombia ahora mismo? "
-                    "Una oración por punto, ordenados por relevancia estratégica."
-                )
-                st.markdown(resumen)
+    with st.expander("⚡ Briefing ejecutivo", expanded=True):
+        if st.button("Generar briefing", type="primary"):
+            with st.spinner("Analizando..."):
+                prompt_briefing = f"""
+Estás trabajando para el equipo estratégico de {marca_usuario} en Colombia.
+
+Analiza el contexto competitivo y produce un briefing ejecutivo
+para el director de estrategia. Debe ser escaneable en 90 segundos.
+
+Estructura exacta, sin agregar ni quitar secciones:
+
+🔴 SEÑAL DE LA SEMANA
+[Una oración. El movimiento más importante del mercado esta semana
+que {marca_usuario} no puede ignorar.]
+
+📍 QUIÉN SE MUEVE Y HACIA DÓNDE
+[Máximo 3 líneas. Un punto por competidor relevante.
+Solo lo que cambia, no lo que se mantiene igual.]
+
+⚠️ EL RIESGO QUE NADIE ESTÁ NOMBRANDO
+[Una oración. La amenaza emergente o el patrón que se está
+formando y que todavía no es obvio.]
+
+❓ LA PREGUNTA QUE {marca_usuario.upper()} DEBERÍA HACERSE AHORA
+[Una sola pregunta estratégica. Que incomode. Que obligue a pensar.]
+
+Nada más. Sin introducciones, sin conclusiones, sin bullets adicionales.
+"""
+                briefing = cadena.invoke(prompt_briefing)
+                st.markdown(briefing)
     
     st.divider()
     st.caption("Análisis automatizado sobre las 6 dimensiones clave del mercado")
