@@ -1,10 +1,11 @@
 import json
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
-from pathlib import Path
 
 import feedparser
 from bs4 import BeautifulSoup
+
+from config import DATA_DIR
 
 # ---------------------------------------------------------------------------
 # Configuración
@@ -50,7 +51,7 @@ FILTROS = {
 }
 
 DIAS_MAXIMOS = 730
-OUTPUT_DIR = Path("data/raw")
+OUTPUT_DIR = DATA_DIR
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------

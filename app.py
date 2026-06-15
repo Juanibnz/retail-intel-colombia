@@ -1,32 +1,15 @@
 import streamlit as st
-import json
-from pathlib import Path
 from datetime import datetime
-from typing import List
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-from langchain_core.embeddings import Embeddings
-from sentence_transformers import SentenceTransformer
-import os
 import time
 
-class EmbeddingsLocales(Embeddings):
-    def __init__(self, model_name: str):
-        self.model = SentenceTransformer(model_name)
+from config import CHROMA_DIR, EMBEDDING_MODEL, GROQ_MODEL
+from utils import EmbeddingsLocales, formatear_contexto, PROMPT_SISTEMA
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        return self.model.encode(texts, show_progress_bar=False).tolist()
-
-    def embed_query(self, text: str) -> List[float]:
-        return self.model.encode(text, show_progress_bar=False).tolist()
-
-# Configuración
-CHROMA_DIR = Path("data/chroma_db")
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-GROQ_MODEL = "openai/gpt-oss-120b"
 
 PREGUNTAS_REPORTE = [
     {
@@ -61,76 +44,10 @@ PREGUNTAS_REPORTE = [
     }
 ]
 
-PROMPT_SISTEMA = """Eres un analista de inteligencia de mercado especializado en retail de moda en Colombia.
-
-Tu trabajo es analizar información de fuentes públicas sobre Falabella, Studio F y Zara Colombia, 
-y producir inteligencia accionable para equipos de mercadeo y producto.
-
-Fecha de hoy: {fecha_hoy}
-
-CONTEXTO DE FUENTES:
-{contexto}
-
-INSTRUCCIONES:
-- Basa tu análisis ÚNICAMENTE en la información del contexto proporcionado
-- Si la información no está en el contexto, indícalo explícitamente
-- Prioriza información reciente sobre información antigua
-- Distingue entre hechos confirmados y señales o tendencias
-- Cuando la pregunta involucre más de una marca, estructura el análisis 
-  por marca primero y luego sintetiza las dinámicas comparativas
-- Calibra tu confianza: si la evidencia es débil, dilo explícitamente
-- Usa lenguaje de negocio, no técnico
-
-FORMATO DE RESPUESTA:
-
-Si la pregunta es sobre UNA marca:
-
-**HALLAZGO PRINCIPAL**
-[Una oración que resume lo más importante]
-
-**EVIDENCIA**
-[2-3 puntos concretos con fecha y fuente]
-
-**IMPLICACIÓN PARA EL NEGOCIO**
-[Qué debería considerar un equipo de mercadeo o producto]
-
-**LIMITACIONES**
-[Qué no sabes o qué información faltaría]
-
-Si la pregunta es COMPARATIVA entre marcas:
-
-**DINÁMICA DE MERCADO**
-[Una oración que describe el patrón competitivo central]
-
-**POR MARCA**
-[Para cada marca relevante: hallazgo principal + 1-2 evidencias con fecha y fuente]
-
-**MAPA COMPETITIVO**
-[Tabla comparativa de las marcas en la dimensión analizada]
-
-**IMPLICACIÓN ESTRATÉGICA**
-[Qué significa esta dinámica para alguien que compite en este mercado]
-
-**LIMITACIONES**
-[Qué información faltaría para un análisis más robusto]
-"""
-
-def formatear_contexto(documentos) -> str:
-    fragmentos = []
-    for doc in documentos:
-        fragmento = f"""
-Fuente: {doc.metadata['fuente']}
-Fecha: {doc.metadata['fecha']}
-Marca: {doc.metadata['marca']}
----
-{doc.page_content}
-        """.strip()
-        fragmentos.append(fragmento)
-    return "\n\n".join(fragmentos)
 
 @st.cache_resource
 def cargar_recursos(groq_key: str):
-    embeddings = EmbeddingsLocales("all-MiniLM-L6-v2")
+    embeddings = EmbeddingsLocales(EMBEDDING_MODEL)
     vectorstore = Chroma(
         persist_directory=str(CHROMA_DIR),
         embedding_function=embeddings
@@ -141,6 +58,7 @@ def cargar_recursos(groq_key: str):
         api_key=groq_key
     )
     return vectorstore, llm
+
 
 def construir_cadena(vectorstore, llm):
     retriever = vectorstore.as_retriever(
@@ -162,6 +80,7 @@ def construir_cadena(vectorstore, llm):
         | StrOutputParser()
     )
     return cadena
+
 
 # UI
 st.set_page_config(
@@ -213,24 +132,26 @@ if not groq_key or not marca_usuario:
         st.info("Selecciona tu marca en el panel izquierdo para continuar.")
     st.stop()
 
+
 def inicializar_si_necesario():
     """Construye la base de conocimiento si no existe."""
     if not CHROMA_DIR.exists() or not any(CHROMA_DIR.iterdir()):
         st.info("Inicializando base de conocimiento por primera vez. Esto toma unos minutos...")
-        
+
         from main import main as extraer
         from pipeline_rag import cargar_articulos, crear_chunks, construir_base_conocimiento
-        
+
         with st.spinner("Extrayendo artículos de fuentes públicas..."):
             extraer()
-        
+
         with st.spinner("Construyendo base de conocimiento vectorial..."):
             documentos = cargar_articulos()
             chunks = crear_chunks(documentos)
             construir_base_conocimiento(chunks)
-        
+
         st.success("Base de conocimiento lista.")
         st.rerun()
+
 
 inicializar_si_necesario()
 
@@ -241,7 +162,7 @@ tab_reporte, tab_consulta = st.tabs(["📊 Reporte semanal", "💬 Consulta libr
 
 with tab_reporte:
     st.subheader("Reporte de inteligencia semanal")
-    
+
     with st.expander("⚡ Briefing ejecutivo", expanded=True):
         if st.button("Generar briefing", type="primary"):
             with st.spinner("Analizando..."):
@@ -337,10 +258,10 @@ Nada más. Sin introducciones ni conclusiones adicionales.
                             st.caption(doc.metadata['fuente'])
                         with col3:
                             st.caption(doc.metadata['fecha'][:16])
-    
+
     st.divider()
     st.caption("Análisis automatizado sobre las 6 dimensiones clave del mercado")
-    
+
     if st.button("Generar reporte completo", type="primary"):
         for i, seccion in enumerate(PREGUNTAS_REPORTE):
             with st.expander(f"**{seccion['titulo']}**", expanded=True):
